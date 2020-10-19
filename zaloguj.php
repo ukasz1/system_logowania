@@ -1,6 +1,11 @@
 <?php
 
 	session_start(); 		//uzyskanie dostępu do sesji
+	
+	if(!isset($_POST['login']) || !isset($_POST['haslo'])){
+		header('Location: index.php');
+		exit();
+	}
 
 	require_once "connect.php";  //załącza skryp 'connect' do wysterowania połączenia z SQL
 
@@ -8,7 +13,7 @@
 
 	if($polaczenie->connect_errno!=0){
 		
-		echo "Error: ".$polaczenie->connect_errno; // ."Opis: ",$polaczenie.)connect->error;
+		echo "Error: ".$polaczenie->connect_errno; // connect_errno - numer błędu
 		
 	}
 	else{
@@ -16,16 +21,23 @@
 		$login = $_POST['login'];
 		$haslo = $_POST['haslo'];
 		
-		$sql="SELECT * FROM uzytkownicy WHERE user='$login' AND pass='$haslo'";			//zmienna $sql zawiera kwerendę dla bd
+		$login = htmlentities($login, ENT_QUOTES, "UTF-8");
+		$haslo = htmlentities($haslo, ENT_QUOTES, "UTF-8");
 		
-		if($rezultat=@$polaczenie->query($sql)){	//jeśli zapytanie jest poprawne, np. bez literówek; $rezultat to pobrane rekordy
-
+		if($rezultat=@$polaczenie->query(
+		sprintf("SELECT * FROM uzytkownicy WHERE user='%s' AND pass='%s'",
+		mysqli_real_escape_string($polaczenie,$login),
+		mysqli_real_escape_string($polaczenie,$haslo))))			
+		{											//jeśli zapytanie jest poprawne, np. bez literówek; $rezultat to obiekt pobranych rekordów + zabezpieczenie przed SQL injection
 			$ilu_userow = $rezultat->num_rows;		//liczba zwracanych rekordów	
 	
 			if($ilu_userow==1){
+				
+				$_SESSION['zalogowany']=true;
 				$wiersz=$rezultat->fetch_assoc();	//$wiersz to $rezultat ale zamiast indeksów liczbowych można się odwołać przez nazwy kolumn
 													//czyli $wiersz to tablica asocjacyjna
 				
+				$_SESSION['id']=$wiersz['id'];
 				$_SESSION['user']=$wiersz['user'];	//przesłanie usera z rekordu do sesji
 				$_SESSION['drewno']=$wiersz['drewno'];	
 				$_SESSION['kamien']=$wiersz['kamien'];
