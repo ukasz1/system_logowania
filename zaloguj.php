@@ -22,38 +22,47 @@
 		$haslo = $_POST['haslo'];
 		
 		$login = htmlentities($login, ENT_QUOTES, "UTF-8");
-		$haslo = htmlentities($haslo, ENT_QUOTES, "UTF-8");
 		
 		if($rezultat=@$polaczenie->query(
-		sprintf("SELECT * FROM uzytkownicy WHERE user='%s' AND pass='%s'",
-		mysqli_real_escape_string($polaczenie,$login),
-		mysqli_real_escape_string($polaczenie,$haslo))))			
+		sprintf("SELECT * FROM uzytkownicy WHERE user='%s'",
+		mysqli_real_escape_string($polaczenie,$login))))			
 		{											//jeśli zapytanie jest poprawne, np. bez literówek; $rezultat to obiekt pobranych rekordów + zabezpieczenie przed SQL injection
 			$ilu_userow = $rezultat->num_rows;		//liczba zwracanych rekordów	
 	
-			if($ilu_userow==1){
+			if($ilu_userow>0){
 				
-				$_SESSION['zalogowany']=true;
 				$wiersz=$rezultat->fetch_assoc();	//$wiersz to $rezultat ale zamiast indeksów liczbowych można się odwołać przez nazwy kolumn
 													//czyli $wiersz to tablica asocjacyjna
 				
-				$_SESSION['id']=$wiersz['id'];
-				$_SESSION['user']=$wiersz['user'];	//przesłanie usera z rekordu do sesji
-				$_SESSION['drewno']=$wiersz['drewno'];	
-				$_SESSION['kamien']=$wiersz['kamien'];
-				$_SESSION['zboze']=$wiersz['zboze'];
-				$_SESSION['email']=$wiersz['email'];
-				$_SESSION['dnipremium']=$wiersz['dnipremium'];
-				
-				unset($_SESSION['blad']);	//kasowanie zmiennej błędu loginu/hasła z sesji
-				
-				$rezultat->free();			//zwalnianie pamięci $rezultat'u
-				
-				header('Location:gra.php');
+				if(password_verify($haslo,$wiersz['pass']))
+				{
+					$_SESSION['zalogowany']=true;
+														//$wiersz to $rezultat ale zamiast indeksów liczbowych można się odwołać przez nazwy kolumn
+														//czyli $wiersz to tablica asocjacyjna
+					
+					$_SESSION['id']=$wiersz['id'];
+					$_SESSION['user']=$wiersz['user'];	//przesłanie usera z rekordu do sesji
+					$_SESSION['drewno']=$wiersz['drewno'];	
+					$_SESSION['kamien']=$wiersz['kamien'];
+					$_SESSION['zboze']=$wiersz['zboze'];
+					$_SESSION['email']=$wiersz['email'];
+					$_SESSION['dnipremium']=$wiersz['dnipremium'];
+					
+					unset($_SESSION['blad']);	//kasowanie zmiennej błędu loginu/hasła z sesji
+					
+					$rezultat->free();			//zwalnianie pamięci $rezultat'u
+					
+					header('Location:gra.php');
+					}
+				else{
+					$_SESSION['blad']='<span style="color: red;">Nieprawdłowy login lub hasło</span>';
+					header('Location:index.php');	//dobry login, złe hasło
+				}
+					
 			}
 			else{
 				$_SESSION['blad']='<span style="color: red;">Nieprawdłowy login lub hasło</span>';
-				header('Location:index.php');
+				header('Location:index.php');		//zły login, dowolne hasło
 			}
 			
 		}

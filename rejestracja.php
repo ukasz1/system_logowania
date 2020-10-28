@@ -25,7 +25,7 @@
 		
 		if(ctype_alnum($nick)==false){				//ctype_alnum() - funkcja do sprawdzania znaków alfanumerycznych
 			$wszystko_OK=false;
-			$_SESSION['e_nick']="Nick może składać się tylko z liter i cyfr (bez polskich znaków)";
+			$_SESSION['e_nick']="Nick może składać się tylko z liter i cyfr (bez polskich znaków)!";
 		}
 		
 		//Sprawdzanie poprawności adresu e-mail
@@ -35,7 +35,7 @@
 		
 		if(filter_var($email,FILTER_VALIDATE_EMAIL)!=true || $email!=$emailB){	//filter_var($zmienna,FILTER_VALIDATE_EMAIL) - funkcja boolowska sprawdzająca poprawność formy e-maila
 			$wszystko_OK=false;
-			$_SESSION['e_email']="Podaj poprawny adres e-mail";
+			$_SESSION['e_email']="Podaj poprawny adres e-mail!";
 		}
 		
 		//Sprawdzanie poprawności hasła
@@ -44,15 +44,38 @@
 		
 		if(strlen($haslo1)<8 || strlen($haslo1)>20){
 			$wszystko_OK=false;
-			$_SESSION['e_haslo1']="Hasło musi posiadać od 8 do 20 znaków";
+			$_SESSION['e_haslo1']="Hasło musi posiadać od 8 do 20 znaków!";
 		}
 		
 		if($haslo1!=$haslo2){
 			$wszystko_OK=false;
-			$_SESSION['e_haslo2']="Podane hasła nie są identyczne";
+			$_SESSION['e_haslo2']="Podane hasła nie są identyczne!";
 		}
 		
+		$haslo_hash = password_hash($haslo1, PASSWORD_DEFAULT);  // hashowanie hasla
 		
+		//Czy zaakceptowano regulamin?
+		if(!isset($_POST['regulamin'])){
+			$wszystko_OK=false;
+			$_SESSION['e_regulamin']="Potwierdź akceptację regulaminu!";
+		}
+		
+		//Antybot
+		$sekret="6Ldt8tkZAAAAAP64HL5xgLicSLIg8kLchf8-LgXP";
+
+//		$sprawdz = file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret='.$sekret.'&response='.$POST_[
+
+		$sprawdz = file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret='.$sekret.'&response='.$_POST['g-recaptcha-response']);
+		
+		$odpowiedz = json_decode($sprawdz);
+		
+
+		
+		if($odpowiedz->success==false){
+			$wszystko_OK=false;
+			$_SESSION['e_bot']="Potwierdź, że nie jesteś robotem!";
+		}
+ 		
 		if($wszystko_OK==true){
 			// Dodać gracza do bazy
 			echo "Udana walidacja!";
@@ -127,7 +150,23 @@
 			<input type="checkbox" name="regulamin"/>Akceptuję regulamin
 		</label>
 	
+		<?php
+			if (isset($_SESSION['e_regulamin'])){
+				echo '<div class="error">'.$_SESSION['e_regulamin'].'</div>';	//Komunikat: brak akceptacji regulaminu
+				unset($_SESSION['e_regulamin']);								
+				
+			}
+		?>
+	
 		<div class="g-recaptcha" data-sitekey="6Ldt8tkZAAAAAEdl2tKe6OTMiSLUxWiJVzLTt3UF"></div>
+		
+		<?php
+			if (isset($_SESSION['e_bot'])){
+				echo '<div class="error">'.$_SESSION['e_bot'].'</div>';	//Komunikat: antybot
+				unset($_SESSION['e_bot']);								
+				
+			}
+		?>
 		
 		<input type="submit" value="Zarejestruj" />
 	</form>
