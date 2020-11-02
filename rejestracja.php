@@ -67,21 +67,76 @@
 
 		$sprawdz = file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret='.$sekret.'&response='.$_POST['g-recaptcha-response']);
 		
-		$odpowiedz = json_decode($sprawdz);
+		//	/|\
+		//	 |____ pobiera zawartość pliku z odpowiedzią Google'a
 		
+		$odpowiedz = json_decode($sprawdz);	//dekodowanie z formatu JSONa
+
 
 		
-		if($odpowiedz->success==false){
+		if($odpowiedz->success==false){		//czy walidacja się udała
 			$wszystko_OK=false;
 			$_SESSION['e_bot']="Potwierdź, że nie jesteś robotem!";
 		}
- 		
-		if($wszystko_OK==true){
-			// Dodać gracza do bazy
-			echo "Udana walidacja!";
-			exit();
+		
+		require_once "connect.php";
+		mysqli_report(MYSQLI_REPORT_STRICT); // zamiast warningów użyj Exception (żeby nie ujawniać szczegółów użytkownikowi)
+		
+		try{
+			$polaczenie = new mysqli($host, $db_user, $db_password, $db_name);
+			if($polaczenie->connect_errno!=0){
+				throw new Exception(mysqli_connect_errno());
+			}
+			else{
+				//Czy email już istnieje?
+				$rezultat = $polaczenie->query("SELECT id FROM uzytkownicy WHERE email='$email'");
+				
+				if(!$rezultat) throw new Exception($polaczenie->error);		//gdyby nie udało się pobrać rekordu
 			
+				$ile_takich_maili = $rezultat->num_rows;
+
+				if($ile_takich_maili>0){
+					$wszystko_OK=false;
+					$_SESSION['e_email']="Istnieje już konto przypisane do tego adresu e-mail!";
+				}
+				
+				//Czy login już istnieje?
+				$rezultat = $polaczenie->query("SELECT id FROM uzytkownicy WHERE user='$nick'");
+				
+				if(!$rezultat) throw new Exception($polaczenie->error);		//gdyby nie udało się pobrać rekordu
+			
+				$ile_takich_nickow = $rezultat->num_rows;
+
+				if($ile_takich_nickow>0){
+					$wszystko_OK=false;
+					$_SESSION['e_nick']="Istnieje już gracz o takim nicku!";
+				}
+				
+				
+				if($wszystko_OK==true){
+				
+				// Dodawanie gracza do bazy
+				
+				if($polaczenie->query("INSERT INTO uzytkownicy VALUES (NULL, '$nick', '$haslo_hash', '$email',100,100,100,14)")){
+					$_SESSION['udanarejestracja']=true;
+					header('Location: witamy.php');
+				}
+				else{
+					throw new Exception($polaczenie->error);
+				}
+				exit();				
+				}
+				
+				$polaczenie->close();
+			}
 		}
+ 		
+		catch(Exception $e){	//$e - rodzaj błędu
+			echo '<span style="color: red;">Błąd serwera! Przepraszamy za niedogodności i prosimy o rejestrację w innym terminie</span>';
+			echo '<br />Informacja developerska: '.$e;	//komentarz o numerze błędu dla programisty
+		}
+		
+		
 	}
 	
 ?>
