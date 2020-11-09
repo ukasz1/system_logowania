@@ -79,6 +79,13 @@
 			$_SESSION['e_bot']="Potwierdź, że nie jesteś robotem!";
 		}
 		
+		//Zapamiętanie wspowadzonych danych
+		$_SESSION['form_nick']=$nick;
+		$_SESSION['form_email']=$email;
+		$_SESSION['form_nick']=$nick;
+		
+		if(isset($_POST['regulamin'])) $_SESSION['form_regulamin']=true;
+		
 		require_once "connect.php";
 		mysqli_report(MYSQLI_REPORT_STRICT); // zamiast warningów użyj Exception (żeby nie ujawniać szczegółów użytkownikowi)
 		
@@ -163,7 +170,15 @@
 
 	<form method="post"> <!-- bez atrybutu 'action' dane otrzyma ten sam plik -->
 
-		Nick: <br /><input type="text" name="nick" /><br />
+		Nick: <br /><input type="text" value="<?php
+		if(isset($_SESSION['form_nick'])){
+			echo $_SESSION['form_nick'];
+			unset($_SESSION['form_nick']);
+			
+		}
+		
+		
+		?>"name="nick" /><br />
 		
 		<?php
 			if (isset($_SESSION['e_nick'])){
@@ -172,7 +187,16 @@
 			}
 		?>
 		
-		E-mail:<br /><input type="text" name="email" /><br />
+		E-mail:<br /><input type="text" value="<?php
+			if(isset($_SESSION['form_email'])){
+				echo $_SESSION['form_email'];
+				unset($_SESSION['form_email']);
+				
+			}
+		
+		?>"
+
+		name="email" /><br />
 		
 		<?php
 			if (isset($_SESSION['e_email'])){
@@ -202,7 +226,14 @@
 		?>
 		
 		<label>
-			<input type="checkbox" name="regulamin"/>Akceptuję regulamin
+			<input type="checkbox" name="regulamin" <?php
+			if(isset($_SESSION['form_regulamin'])){
+				echo "checked";
+				unset($_SESSION['form_regulamin']);
+			}
+			
+			?>
+			/>Akceptuję regulamin
 		</label>
 	
 		<?php
